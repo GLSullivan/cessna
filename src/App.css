@@ -1,38 +1,77 @@
-.App {
-  text-align: center;
+html {
+  font-family     : 'Poppins', sans-serif;
+  --backing-color : rgba(255, 255, 255, 0.5);
+  --backing-filter: blur(20px);
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+h1 {
+  font-size  : 1.2rem;
+  font-weight: 300;
+  margin     : 0;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+div#scene-holder {
+  left    : 0;
+  position: absolute;
+  top     : 0;
+  z-index : 1;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+.controls {
+  display        : flex;
+  justify-content: space-between;
+  position       : relative;
+  z-index        : 2;
+}
+
+.controls>div {
+  align-items    : center;
+  backdrop-filter: var(--backing-filter);
+  background     : var(--backing-color);
+  border-radius  : .5rem;
+  display        : flex;
+  gap            : 1rem;
+  padding        : .5rem;
+}
+
+.controls>div>div {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  gap    : .5rem;
 }
 
-.App-link {
-  color: #61dafb;
+.controls button {
+  border       : none;
+  border-radius: .25rem;
+  cursor       : pointer;
+  outline      : none;
+  padding      : .5rem 1.5rem;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.instructions {
+  backdrop-filter: var(--backing-filter);
+  background     : var(--backing-color);
+  border-radius  : .5rem;
+  bottom         : 1rem;
+  display        : flex;
+  flex-direction : column;
+  gap            : .4rem;
+  left           : 1rem;
+  padding        : 1rem;
+  position       : fixed;
+  z-index        : 2;
+}
+
+.instructions span {
+  align-items     : center;
+  aspect-ratio    : 1;
+  background-color: white;
+  border          : 1px solid black;
+  border-radius   : .25rem;
+  display         : inline-flex;
+  font-size       : 1.2rem;
+  justify-self    : center;
+  margin          : 0 .2rem;
+  padding         : .25rem;
+  text-align      : center;
+  width           : 1.2rem;
 }
