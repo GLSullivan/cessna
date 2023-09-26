@@ -191,7 +191,7 @@ dialog.open::backdrop {
   opacity: 1;
 }
 
-    /* Auto Height */
+      /* Auto Height */
 
 .auto-height {
   display           : grid;
@@ -212,7 +212,7 @@ dialog.open::backdrop {
   grid-template-rows: 1fr;
 }
 
-    /* Details */
+/* Details */
 
 .info-popup {
   align-items    : center;
@@ -232,9 +232,10 @@ dialog.open::backdrop {
   background     : var(--backing-color);
   border-radius  : .5rem;
   box-sizing     : border-box;
-  max-width      : 50%;
+  max-width      : 600px;
   padding        : 1rem;
   position       : relative;
+  width          : 50%;
 }
 
 .info-popup h2 {
