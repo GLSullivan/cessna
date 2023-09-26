@@ -42,7 +42,7 @@ const Welcome: React.FC = () => {
       <div className = "welcome" onClick = {(e) => e.stopPropagation()}>
         <h1>Intro to Control Surfaces</h1>
         <p>
-          Welcome! This three.js project is an exploration of how aircraft are
+          Welcome! This Three.js project is an exploration of how aircraft are
           controlled in flight. It was created by{" "}
           <span className = "no-wrap">Greg Sullivan</span>, a pilot, developer,
           and animator, as a capabilities demonstration over the course of a
@@ -78,7 +78,7 @@ const Welcome: React.FC = () => {
             </a>
             .
           </p>
-          <p>The model was generously contributed by Boba3d, then heavily modified.</p>
+          <p>The model was generously contributed by Boba3d, then heavily modified in Blender 3.6.</p>
         </div>
       </div>
     </dialog>

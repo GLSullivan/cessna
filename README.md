@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project is a 3D model viewer built with React, TypeScript, and Three.js. It features a Cessna 172 airplane model, a favorite of the creator, Greg Sullivan. This project serves as an exploration of how aircraft are controlled in flight and was created as a capabilities demonstration over the course of a weekend.
+This project serves as an exploration of how aircraft are controlled in flight and was created as a capabilities demonstration of React, TypeScript, and Three.js  over the course of a weekend .It features a Cessna 172 airplane model, a favorite of the creator, Greg Sullivan.
 
 ## Features
 
