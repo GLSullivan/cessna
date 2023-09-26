@@ -17,42 +17,47 @@ import { objectInfoMap }                      from './../data/objectInfoMap'
 
 const Cessna: React.FC = () => {
 
-  const airplaneRef                  = useRef<THREE.Object3D<THREE.Object3DEventMap> | undefined>(undefined);
+  const airplaneRef                                 = useRef<THREE.Object3D<THREE.Object3DEventMap> | undefined>(undefined);
+                
+  const propRef                                     = useRef<THREE.Object3D<THREE.Object3DEventMap> | undefined>(undefined);
+  const leftFlapRef                                 = useRef<THREE.Object3D<THREE.Object3DEventMap> | undefined>(undefined);
+  const rightFlapRef                                = useRef<THREE.Object3D<THREE.Object3DEventMap> | undefined>(undefined);
+  const elevatorLeftRef                             = useRef<THREE.Object3D<THREE.Object3DEventMap> | undefined>(undefined);
+  const elevatorRightRef                            = useRef<THREE.Object3D<THREE.Object3DEventMap> | undefined>(undefined);
+  const aileronLeftRef                              = useRef<THREE.Object3D<THREE.Object3DEventMap> | undefined>(undefined);
+  const aileronRightRef                             = useRef<THREE.Object3D<THREE.Object3DEventMap> | undefined>(undefined);
+  const rudderRef                                   = useRef<THREE.Object3D<THREE.Object3DEventMap> | undefined>(undefined);
+  const strutRef                                    = useRef<THREE.Object3D<THREE.Object3DEventMap> | undefined>(undefined);
+                
+  const speedRef                                    = useRef(0.5);
+  const bobIntensityRef                             = useRef(10);
+  const flapAngleRef                                = useRef(0);
+  const elevatorAngleRef                            = useRef(0);
+  const aileronLeftAngleRef                         = useRef(0);
+  const aileronRightAngleRef                        = useRef(0);
+  const rudderAngleRef                              = useRef(0);
+  const bobTimeRef                                  = useRef(0);
+  const flapRefs                                    = useRef<{ leftFlapRef?: THREE.Object3D<THREE.Object3DEventMap>, 
+                                                          rightFlapRef?: THREE.Object3D<THREE.Object3DEventMap> }>({});
+                                                  
+  const [activeFlapButton, setActiveFlapButton]     = useState<number>(0);
+  const [activeSpeedButton, setActiveSpeedButton]   = useState<number>(.25);
+  const [activeBobButton, setActiveBobButton]       = useState<number>(10);
+    
+  const currentElevatorTween                        = useRef<any | null>(null);
+  const currentRudderTween                          = useRef<any | null>(null);
+  const currentLeftAileronTween                     = useRef<any | null>(null);
+  const currentRightAileronTween                    = useRef<any | null>(null);
+  const currentBobTween                             = useRef<any | null>(null);
+  const currentTween                                = useRef<any | null>(null);
+  const currentFlapTween                            = useRef<any | null>(null);
+  const currentHorizontalOffsetTween                = useRef<any | null>(null);
+                  
+  const outlinePassRef                              = useRef<OutlinePass | null>(null);
 
-  const propRef                      = useRef<THREE.Object3D<THREE.Object3DEventMap> | undefined>(undefined);
-  const leftFlapRef                  = useRef<THREE.Object3D<THREE.Object3DEventMap> | undefined>(undefined);
-  const rightFlapRef                 = useRef<THREE.Object3D<THREE.Object3DEventMap> | undefined>(undefined);
-  const elevatorLeftRef              = useRef<THREE.Object3D<THREE.Object3DEventMap> | undefined>(undefined);
-  const elevatorRightRef             = useRef<THREE.Object3D<THREE.Object3DEventMap> | undefined>(undefined);
-  const aileronLeftRef               = useRef<THREE.Object3D<THREE.Object3DEventMap> | undefined>(undefined);
-  const aileronRightRef              = useRef<THREE.Object3D<THREE.Object3DEventMap> | undefined>(undefined);
-  const rudderRef                    = useRef<THREE.Object3D<THREE.Object3DEventMap> | undefined>(undefined);
-  const strutRef                     = useRef<THREE.Object3D<THREE.Object3DEventMap> | undefined>(undefined);
+  const [popupInfo, setPopupInfo]                   = useState<{ headline: string, paragraph: string, image?: string } | null>(null);
+  const [pressedVirtualKeys, setPressedVirtualKeys] = useState<Set<string>>(new Set());
 
-  const speedRef                     = useRef(0.5);
-  const bobIntensityRef              = useRef(10);
-  const flapAngleRef                 = useRef(0);
-  const elevatorAngleRef             = useRef(0);
-  const aileronLeftAngleRef          = useRef(0);
-  const aileronRightAngleRef         = useRef(0);
-  const rudderAngleRef               = useRef(0);
-  const bobTimeRef                   = useRef(0);
-  const flapRefs                     = useRef<{ leftFlapRef?: THREE.Object3D<THREE.Object3DEventMap>, 
-                                                rightFlapRef?: THREE.Object3D<THREE.Object3DEventMap> }>({});  
-  
-  const currentElevatorTween         = useRef<any | null>(null);
-  const currentRudderTween           = useRef<any | null>(null);
-  const currentLeftAileronTween      = useRef<any | null>(null);
-  const currentRightAileronTween     = useRef<any | null>(null);
-  const currentBobTween              = useRef<any | null>(null);
-  const currentTween                 = useRef<any | null>(null);
-  const currentFlapTween             = useRef<any | null>(null);
-  const currentHorizontalOffsetTween = useRef<any | null>(null);
-  
-  const outlinePassRef               = useRef<OutlinePass | null>(null);
-
-  const [popupInfo, setPopupInfo] = useState<{ headline: string, paragraph: string, image?: string } | null>(null);
-  
   const materialMap: { [key: string]: THREE.ShaderMaterial } = {};
 
 
@@ -65,6 +70,8 @@ const Cessna: React.FC = () => {
   // ================================================
 
   const handleFlapRotation = (newAngle: number) => {
+    setActiveFlapButton(newAngle);
+
     if (currentFlapTween.current) {
       currentFlapTween.current.stop();
     }
@@ -96,6 +103,8 @@ const Cessna: React.FC = () => {
   // ================================================
 
   const handleSpeedChange = (newSpeed: number) => {
+    setActiveSpeedButton(newSpeed);
+
     if (currentTween.current) {
       currentTween.current.stop();
     }
@@ -118,6 +127,8 @@ const Cessna: React.FC = () => {
   // ================================================
 
   const handleBobIntensityChange = (newIntensity: number) => {
+    setActiveBobButton(newIntensity);
+
     if (currentBobTween.current) {
       currentBobTween.current.stop();
     }
@@ -286,6 +297,9 @@ const Cessna: React.FC = () => {
     handleElevatorRotation(elevatorRotation);
     handleAileronRotation(aileronRotation);
     handleRudderRotation(rudderRotation);
+
+    setPressedVirtualKeys(new Set(pressedKeys));
+
   };
 
   const handleKeyUp = (event: KeyboardEvent) => {
@@ -300,7 +314,21 @@ const Cessna: React.FC = () => {
     if (event.code === "BracketLeft" || event.code === "BracketRight") {
       handleRudderRotation(0);
     }
+
+    setPressedVirtualKeys(new Set(pressedKeys));
+
   };
+
+  const handleVirtualKeyPress = (key: string) => {
+    pressedKeys.add(key);
+    handleKeyPress({ code: key } as KeyboardEvent);
+  };
+  
+  const handleVirtualKeyUp = (key: string) => {
+    pressedKeys.delete(key);
+    handleKeyUp({ code: key } as KeyboardEvent);
+  };
+  
 
   // ================================================
   // Materials
@@ -658,28 +686,26 @@ const Cessna: React.FC = () => {
         <div>
           <h1>Engine Speed</h1>
           <div>
-            <button onClick={() => handleSpeedChange(0.5)}>Full</button>
-            <button onClick={() => handleSpeedChange(0.25)}>Half</button>
-            <button onClick={() => handleSpeedChange(0)}>Idle</button>
+            <button className={activeSpeedButton === 0 ? 'active' : ''}    onClick={() => handleSpeedChange(0)}>Idle</button>
+            <button className={activeSpeedButton === 0.25 ? 'active' : ''} onClick={() => handleSpeedChange(0.25)}>Half</button>
+            <button className={activeSpeedButton === 0.5 ? 'active' : ''}  onClick={() => handleSpeedChange(0.5)}>Full</button>
           </div>
         </div>
         <div>
           <h1>Turbulence</h1>
           <div>
-            <button onClick={() => handleBobIntensityChange(0)}>None</button>
-            <button onClick={() => handleBobIntensityChange(10)}>Some</button>
-            <button onClick={() => handleBobIntensityChange(100)}>
-              Oh no!
-            </button>
+            <button className={activeBobButton === 0 ? 'active' : ''}   onClick={() => handleBobIntensityChange(0)}>None</button>
+            <button className={activeBobButton === 10 ? 'active' : ''}  onClick={() => handleBobIntensityChange(10)}>Some</button>
+            <button className={activeBobButton === 100 ? 'active' : ''} onClick={() => handleBobIntensityChange(100)}>Oh no!</button>
           </div>
         </div>
         <div>
           <h1>Flaps</h1>
           <div>
-            <button onClick={() => handleFlapRotation(0)}>0°</button>
-            <button onClick={() => handleFlapRotation(-10)}>10°</button>
-            <button onClick={() => handleFlapRotation(-20)}>20°</button>
-            <button onClick={() => handleFlapRotation(-30)}>30°</button>
+            <button className={activeFlapButton === 0 ? 'active' : ''}   onClick={() => handleFlapRotation(0)}>0°</button>
+            <button className={activeFlapButton === -10 ? 'active' : ''} onClick={() => handleFlapRotation(-10)}>10°</button>
+            <button className={activeFlapButton === -20 ? 'active' : ''} onClick={() => handleFlapRotation(-20)}>20°</button>
+            <button className={activeFlapButton === -30 ? 'active' : ''} onClick={() => handleFlapRotation(-30)}>30°</button>
           </div>
         </div>
       </div>
@@ -699,35 +725,59 @@ const Cessna: React.FC = () => {
       </div>
 
       <div className="instructions">
+        <h1>Key Controls</h1>
         <div>
-          <span>
+          <button 
+            className={pressedVirtualKeys.has("ArrowLeft") ? "active" : ""}
+            onMouseDown={() => handleVirtualKeyPress("ArrowLeft")}
+            onMouseUp={() => handleVirtualKeyUp("ArrowLeft")}
+          >
             <i className="fa-solid fa-fw fa-caret-left" />
-          </span>
-          <span>
+          </button>
+          <button 
+            className={pressedVirtualKeys.has("ArrowRight") ? "active" : ""}
+            onMouseDown={() => handleVirtualKeyPress("ArrowRight")}
+            onMouseUp={() => handleVirtualKeyUp("ArrowRight")}
+          >
             <i className="fa-solid fa-fw fa-caret-right" />
-          </span>
+          </button>
           : Ailerons
         </div>
         <div>
-          <span>
+          <button 
+            className={pressedVirtualKeys.has("ArrowDown") ? "active" : ""}
+            onMouseDown={() => handleVirtualKeyPress("ArrowDown")}
+            onMouseUp={() => handleVirtualKeyUp("ArrowDown")}
+          >
             <i className="fa-solid fa-fw fa-caret-down" />
-          </span>
-          <span>
+          </button>
+          <button 
+            className={pressedVirtualKeys.has("ArrowUp") ? "active" : ""}
+            onMouseDown={() => handleVirtualKeyPress("ArrowUp")}
+            onMouseUp={() => handleVirtualKeyUp("ArrowUp")}
+          >
             <i className="fa-solid fa-fw fa-caret-up" />
-          </span>
+          </button>
           : Elevator
         </div>
         <div>
-          <span>
+          <button 
+            className={pressedVirtualKeys.has("BracketLeft") ? "active" : ""}
+            onMouseDown={() => handleVirtualKeyPress("BracketLeft")}
+            onMouseUp={() => handleVirtualKeyUp("BracketLeft")}
+          >
             <i className="fa-solid fa-fw fa-bracket-square" />
-          </span>
-          <span>
+          </button>
+          <button 
+            className={pressedVirtualKeys.has("BracketRight") ? "active" : ""}
+            onMouseDown={() => handleVirtualKeyPress("BracketRight")}
+            onMouseUp={() => handleVirtualKeyUp("BracketRight")}
+          >
             <i className="fa-solid fa-fw fa-bracket-square-right" />
-          </span>
+          </button>
           : Rudder
         </div>
       </div>
-
       <div id="scene-holder"></div>
     </>
   );

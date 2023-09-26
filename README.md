@@ -1,4 +1,4 @@
-# Cessna 3D Model Viewer
+# Three.js Cessna Demonstration
 
 ## Overview
 
@@ -14,6 +14,8 @@ This project serves as an exploration of how aircraft are controlled in flight a
 - Created by Greg Sullivan, a pilot, developer, and animator
 
 ## How to Run
+
+- Requires v16 or higher. 
 
 1. Clone the repository
 2. Navigate to the project directory
@@ -43,13 +45,13 @@ The code for this project is available in the [GitHub repository](https://github
 
 ## Future Enhancements
 
-- Mobile responsiveness
-- Additional models and scenes
+- Mobile support / responsiveness
+- Additional models, scenes, and interactions
 - VR support
 
 ## Author
 
-Greg Sullivan
+Greg Sullivan - (Greg@ArtOfSullivan.com)
 
 ## License
 

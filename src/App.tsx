@@ -7,7 +7,6 @@ function App() {
     <div className="App">
       <Welcome/>   
       <Cessna/>
-      <div className="credit-block">Created by Greg Sullivan</div>
     </div>
   );
 }
