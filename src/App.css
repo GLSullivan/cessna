@@ -5,9 +5,12 @@ html {
 }
 
 h1 {
-  font-size  : 1.2rem;
   font-weight: 300;
   margin     : 0;
+}
+
+.controls h1 {
+  font-size: 1.2rem;
 }
 
 div#scene-holder {
@@ -39,12 +42,75 @@ div#scene-holder {
   gap    : .5rem;
 }
 
-.controls button {
+.button-group {
+  display        : flex;
+  gap            : 2rem;
+  justify-content: space-between
+}
+
+button {
+  background   : #d9dcdd;
   border       : none;
   border-radius: .25rem;
-  cursor       : pointer;
-  outline      : none;
-  padding      : .5rem 1.5rem;
+  box-shadow   : rgba(17, 17, 26, 0.1) 0px 1px 0px,
+                  rgba(17, 17, 26, 0.1) 0px 8px 24px;
+  cursor : pointer;
+  outline: none;
+  padding: .5rem 1.5rem
+}
+
+button.hero-button,
+button.icon-button {
+  align-items    : center;
+  display        : flex;
+  justify-content: space-between;
+  padding        : 0;
+
+}
+button.hero-button { 
+  background    : #42A5F5;
+  border        : 2px solid #42A5F5;
+  color         : white;
+  font-size     : 1rem;
+  font-weight   : 900;
+  text-transform: uppercase;
+}
+
+button.icon-button {
+  border: 2px solid #d9dcdd;
+}
+
+button.hero-button span,
+button.icon-button span {
+  display    : block;
+  flex       : 2;
+  padding    : 0.5rem 1rem;
+  white-space: nowrap;
+  width      : 100%;
+}
+
+button.hero-button > div,
+button.icon-button > div {
+  align-items    : center;
+  background     : white;
+  border-radius  : .25rem;
+  box-sizing     : border-box;
+  display        : flex;
+  justify-content: center;
+  text-align     : center;
+}
+
+button.hero-button > div {
+  align-items: center;
+  color      : #42A5F5;
+  height     : 3rem;
+  width      : 3rem;
+}
+
+button.icon-button > div {
+  align-items: center;
+  height     : 2rem;
+  width      : 2rem;
 }
 
 .instructions {
@@ -74,4 +140,116 @@ div#scene-holder {
   padding         : .25rem;
   text-align      : center;
   width           : 1.2rem;
+}
+
+dialog {
+  border       : none;
+  border-radius: 1rem;
+  box-shadow   : rgba(17, 17, 26, 0.1) 0px 1px 0px,
+              rgba(17, 17, 26, 0.1) 0px 8px 24px,
+              rgba(17, 17, 26, 0.1) 0px 16px 48px;
+  box-sizing: border-box;
+  max-width : 600px;
+  opacity   : 0;
+  transition: opacity 0.3s ease-in-out;
+  width     : 50vw;
+}
+
+dialog.open {
+  opacity: 1;
+}
+
+.welcome {
+  align-items   : center;
+  display       : flex;
+  flex-direction: column;
+}
+
+dialog::backdrop {
+backdrop-filter : blur(5px);
+background-color: rgb(205 219 234 / 50%);
+}
+
+dialog p {
+  font-weight: 300;
+  line-height: 1.4;
+  width      : 100%;
+}
+
+.no-wrap {
+  white-space: nowrap;
+}
+
+dialog::backdrop {
+  backdrop-filter : blur(5px);
+  background-color: rgb(205 219 234 / 50%);
+  opacity         : 0;
+  transition      : opacity 0.3s ease-in-out;
+}
+
+dialog.open::backdrop {
+  opacity: 1;
+}
+
+    /* Auto Height */
+
+.auto-height {
+  display           : grid;
+  grid-template-rows: 0fr;
+  transition        : 0.5s;
+}
+
+.auto-height > div {
+  overflow  : hidden;
+  transition: 0.5s;
+}
+
+.auto-height.open > div {
+  margin-top: .5rem;
+}
+
+.auto-height.open {
+  grid-template-rows: 1fr;
+}
+
+    /* Details */
+
+.info-popup {
+  align-items    : center;
+  box-sizing     : border-box;
+  display        : flex;
+  justify-content: center;
+  margin-top     : 3rem;
+  opacity        : 0;
+  position       : relative;
+  transition     : opacity 0.3s ease;
+  width          : 100%;
+  z-index        : 100;
+}
+
+.info-popup > div {
+  backdrop-filter: var(--backing-filter);
+  background     : var(--backing-color);
+  border-radius  : .5rem;
+  box-sizing     : border-box;
+  max-width      : 50%;
+  padding        : 1rem;
+  position       : relative;
+}
+
+.info-popup h2 {
+  margin: 0;
+}
+
+.info-popup.active {
+  opacity: 1;
+}
+
+.credit-block {
+  bottom  : 0;
+  color   : white;
+  padding : 1rem;
+  position: fixed;
+  right   : 0;
+  z-index : 100;
 }

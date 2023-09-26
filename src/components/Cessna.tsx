@@ -1,34 +1,45 @@
-import React, { useEffect, useRef }           from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 import * as THREE                             from "three";
 import TWEEN                                  from "@tweenjs/tween.js";
 
 import { GLTFLoader }                         from "three/examples/jsm/loaders/GLTFLoader";
 
-import { initScene }                          from "./three-utils/initScene";
 import { initLighting }                       from "./three-utils/initLighting";
 import { initControls }                       from "./three-utils/initControls";
+import { initScene }                          from "./three-utils/initScene";
+
+import { EffectComposer }                     from 'three/examples/jsm/postprocessing/EffectComposer';
+import { OutlinePass }                        from 'three/examples/jsm/postprocessing/OutlinePass';
+import { RenderPass }                         from 'three/examples/jsm/postprocessing/RenderPass';
+
+import { objectInfoMap }                      from './../data/objectInfoMap'
 
 const Cessna: React.FC = () => {
 
-  let prop          : THREE.Object3D<THREE.Object3DEventMap> | undefined;
-  let airplane      : THREE.Object3D<THREE.Object3DEventMap> | undefined;
-  let leftFlap      : THREE.Object3D<THREE.Object3DEventMap> | undefined;
-  let rightFlap     : THREE.Object3D<THREE.Object3DEventMap> | undefined;
-  let elevatorLeft  : THREE.Object3D<THREE.Object3DEventMap> | undefined;
-  let elevatorRight : THREE.Object3D<THREE.Object3DEventMap> | undefined;
-  let aileronLeft   : THREE.Object3D<THREE.Object3DEventMap> | undefined;
-  let aileronRight  : THREE.Object3D<THREE.Object3DEventMap> | undefined;
-  let rudder        : THREE.Object3D<THREE.Object3DEventMap> | undefined;
+  const airplaneRef                  = useRef<THREE.Object3D<THREE.Object3DEventMap> | undefined>(undefined);
 
-  const speedRef             = useRef(0.5);
-  const bobIntensityRef      = useRef(10);
-  const flapAngleRef         = useRef(0);
-  const elevatorAngleRef     = useRef(0);
-  const aileronLeftAngleRef  = useRef(0);
-  const aileronRightAngleRef = useRef(0);
-  const rudderAngleRef       = useRef(0);
-    
+  const propRef                      = useRef<THREE.Object3D<THREE.Object3DEventMap> | undefined>(undefined);
+  const leftFlapRef                  = useRef<THREE.Object3D<THREE.Object3DEventMap> | undefined>(undefined);
+  const rightFlapRef                 = useRef<THREE.Object3D<THREE.Object3DEventMap> | undefined>(undefined);
+  const elevatorLeftRef              = useRef<THREE.Object3D<THREE.Object3DEventMap> | undefined>(undefined);
+  const elevatorRightRef             = useRef<THREE.Object3D<THREE.Object3DEventMap> | undefined>(undefined);
+  const aileronLeftRef               = useRef<THREE.Object3D<THREE.Object3DEventMap> | undefined>(undefined);
+  const aileronRightRef              = useRef<THREE.Object3D<THREE.Object3DEventMap> | undefined>(undefined);
+  const rudderRef                    = useRef<THREE.Object3D<THREE.Object3DEventMap> | undefined>(undefined);
+  const strutRef                     = useRef<THREE.Object3D<THREE.Object3DEventMap> | undefined>(undefined);
+
+  const speedRef                     = useRef(0.5);
+  const bobIntensityRef              = useRef(10);
+  const flapAngleRef                 = useRef(0);
+  const elevatorAngleRef             = useRef(0);
+  const aileronLeftAngleRef          = useRef(0);
+  const aileronRightAngleRef         = useRef(0);
+  const rudderAngleRef               = useRef(0);
+  const bobTimeRef                   = useRef(0);
+  const flapRefs                     = useRef<{ leftFlapRef?: THREE.Object3D<THREE.Object3DEventMap>, 
+                                                rightFlapRef?: THREE.Object3D<THREE.Object3DEventMap> }>({});  
+  
   const currentElevatorTween         = useRef<any | null>(null);
   const currentRudderTween           = useRef<any | null>(null);
   const currentLeftAileronTween      = useRef<any | null>(null);
@@ -37,15 +48,21 @@ const Cessna: React.FC = () => {
   const currentTween                 = useRef<any | null>(null);
   const currentFlapTween             = useRef<any | null>(null);
   const currentHorizontalOffsetTween = useRef<any | null>(null);
+  
+  const outlinePassRef               = useRef<OutlinePass | null>(null);
 
+  const [popupInfo, setPopupInfo] = useState<{ headline: string, paragraph: string, image?: string } | null>(null);
+  
   const materialMap: { [key: string]: THREE.ShaderMaterial } = {};
 
-  let bobTime:number   = 0;
-  let lightTime:number = 0;
 
-    // ================================================
-    // Interactions
-    // ================================================
+  // ================================================
+  // Interactions
+  // ================================================
+  
+  // ================================================
+  // Flaps Control
+  // ================================================
 
   const handleFlapRotation = (newAngle: number) => {
     if (currentFlapTween.current) {
@@ -59,15 +76,24 @@ const Cessna: React.FC = () => {
       .easing(TWEEN.Easing.Quadratic.InOut)
       .onUpdate(() => {
         flapAngleRef.current = angleObj.value;
-        if (leftFlap && rightFlap) {
-          leftFlap.rotation.x  = THREE.MathUtils.degToRad(flapAngleRef.current);
-          rightFlap.rotation.x = THREE.MathUtils.degToRad(flapAngleRef.current);
+
+        if (flapRefs.current.leftFlapRef && flapRefs.current.rightFlapRef) {
+          flapRefs.current.leftFlapRef.rotation.x = THREE.MathUtils.degToRad(
+            flapAngleRef.current
+          );
+          flapRefs.current.rightFlapRef.rotation.x = THREE.MathUtils.degToRad(
+            flapAngleRef.current
+          );
         }
       })
       .start();
 
     currentFlapTween.current = tween;
   };
+  
+  // ================================================
+  // Prop Speed Control
+  // ================================================
 
   const handleSpeedChange = (newSpeed: number) => {
     if (currentTween.current) {
@@ -86,6 +112,10 @@ const Cessna: React.FC = () => {
 
     currentTween.current = tween;
   };
+  
+  // ================================================
+  // Turbulence Control
+  // ================================================
 
   const handleBobIntensityChange = (newIntensity: number) => {
     if (currentBobTween.current) {
@@ -104,6 +134,10 @@ const Cessna: React.FC = () => {
 
     currentBobTween.current = tween;
   };
+  
+  // ================================================
+  // Elevator Control
+  // ================================================
 
   const handleElevatorRotation = (newAngle: number) => {
     if (currentElevatorTween.current) {
@@ -117,11 +151,11 @@ const Cessna: React.FC = () => {
       .easing(TWEEN.Easing.Quadratic.InOut)
       .onUpdate(() => {
         elevatorAngleRef.current = angleObj.value;
-        if (elevatorLeft && elevatorRight) {
-          elevatorLeft.rotation.x = THREE.MathUtils.degToRad(
+        if (elevatorLeftRef.current && elevatorRightRef.current) {
+          elevatorLeftRef.current.rotation.x = THREE.MathUtils.degToRad(
             elevatorAngleRef.current
           );
-          elevatorRight.rotation.x = THREE.MathUtils.degToRad(
+          elevatorRightRef.current.rotation.x = THREE.MathUtils.degToRad(
             elevatorAngleRef.current
           );
         }
@@ -130,6 +164,10 @@ const Cessna: React.FC = () => {
 
     currentElevatorTween.current = tween;
   };
+  
+  // ================================================
+  // Aileron Control
+  // ================================================
 
   const handleAileronRotation = (newAngle: number) => {
     if (currentLeftAileronTween.current) {
@@ -145,19 +183,19 @@ const Cessna: React.FC = () => {
     }
 
     const angleRightObj = { value: aileronRightAngleRef.current };
-    const angleLeftObj  = { value: aileronLeftAngleRef.current };
+    const angleLeftObj = { value: aileronLeftAngleRef.current };
 
-    const localAxis = new THREE.Vector3(1, 0, 0);  // Local x-axis
+    const localAxis = new THREE.Vector3(1, 0, 0); // Local x-axis
 
     const tweenLeft = new TWEEN.Tween(angleLeftObj)
       .to({ value: newAngle }, 500)
       .easing(TWEEN.Easing.Quadratic.InOut)
       .onUpdate(() => {
-        const oldAngle                    = aileronLeftAngleRef.current;
-              aileronLeftAngleRef.current = angleLeftObj.value;
-        if (aileronLeft) {
+        const oldAngle = aileronLeftAngleRef.current;
+        aileronLeftAngleRef.current = angleLeftObj.value;
+        if (aileronLeftRef.current) {
           const deltaAngle = angleLeftObj.value - oldAngle;
-          aileronLeft.rotateOnAxis(
+          aileronLeftRef.current.rotateOnAxis(
             localAxis,
             THREE.MathUtils.degToRad(deltaAngle * -1)
           );
@@ -169,11 +207,11 @@ const Cessna: React.FC = () => {
       .to({ value: newAngle }, 500)
       .easing(TWEEN.Easing.Quadratic.InOut)
       .onUpdate(() => {
-        const oldAngle                     = aileronRightAngleRef.current;
-              aileronRightAngleRef.current = angleRightObj.value;
-        if (aileronRight) {
+        const oldAngle = aileronRightAngleRef.current;
+        aileronRightAngleRef.current = angleRightObj.value;
+        if (aileronRightRef.current) {
           const deltaAngle = angleRightObj.value - oldAngle;
-          aileronRight.rotateOnAxis(
+          aileronRightRef.current.rotateOnAxis(
             localAxis,
             THREE.MathUtils.degToRad(deltaAngle)
           );
@@ -182,8 +220,12 @@ const Cessna: React.FC = () => {
       .start();
 
     currentRightAileronTween.current = tweenRight;
-    currentLeftAileronTween.current  = tweenLeft;
+    currentLeftAileronTween.current = tweenLeft;
   };
+
+  // ================================================
+  // Rudder Control
+  // ================================================
 
   const handleRudderRotation = (newAngle: number) => {
     if (currentRudderTween.current) {
@@ -197,8 +239,11 @@ const Cessna: React.FC = () => {
       .easing(TWEEN.Easing.Quadratic.InOut)
       .onUpdate(() => {
         rudderAngleRef.current = angleObj.value;
-        if (rudder) {
-          rudder.rotation.y = THREE.MathUtils.degToRad(rudderAngleRef.current);
+        if (rudderRef.current) {
+          rudderRef.current.rotation.y = THREE.MathUtils.degToRad(rudderAngleRef.current);
+        }
+        if (strutRef.current) {
+          strutRef.current.rotation.z = THREE.MathUtils.degToRad(rudderAngleRef.current);
         }
       })
       .start();
@@ -206,9 +251,9 @@ const Cessna: React.FC = () => {
     currentRudderTween.current = tween;
   };
 
-    // ================================================
-    // Inputs
-    // ================================================
+  // ================================================
+  // Inputs
+  // ================================================
 
   const pressedKeys = new Set<string>();
 
@@ -216,8 +261,8 @@ const Cessna: React.FC = () => {
     pressedKeys.add(event.code);
 
     let elevatorRotation = 0;
-    let aileronRotation  = 0;
-    let rudderRotation   = 0;
+    let aileronRotation = 0;
+    let rudderRotation = 0;
 
     if (pressedKeys.has("ArrowUp")) {
       elevatorRotation = -32;
@@ -265,7 +310,7 @@ const Cessna: React.FC = () => {
     return new THREE.ShaderMaterial({
       uniforms: {
         lightTime: { value: 0 },
-        baseColor: { value: new THREE.Color(initialColor) }
+        baseColor: { value: new THREE.Color(initialColor) },
       },
       vertexShader: `
         varying vec2 vUv;
@@ -283,7 +328,7 @@ const Cessna: React.FC = () => {
         intensity = clamp(intensity, 0.0, 1.0); 
         gl_FragColor = vec4(baseColor * intensity, 1.0);
       }
-      `
+      `,
     });
   };
 
@@ -292,7 +337,7 @@ const Cessna: React.FC = () => {
   // ================================================
 
   useEffect(() => {
-    const scene  = new THREE.Scene();
+    const scene = new THREE.Scene();
 
     const camera = new THREE.PerspectiveCamera(
       75,
@@ -306,24 +351,50 @@ const Cessna: React.FC = () => {
     initScene(renderer, camera, scene);
     initLighting(scene);
     initControls(camera, renderer);
-    // initModels(scene);
 
-      // ================================================
-      // Loading the Backing Image
-      // ================================================
+    const composer = new EffectComposer(renderer);
+    const renderPass = new RenderPass(scene, camera);
+    composer.addPass(renderPass);
+
+    const outlinePass = new OutlinePass(
+      new THREE.Vector2(window.innerWidth, window.innerHeight),
+      scene,
+      camera
+    );
+    composer.addPass(outlinePass);
+
+    outlinePass.edgeStrength = 5.0;
+    outlinePass.edgeGlow = 2;
+    outlinePass.edgeThickness = 4.0;
+    outlinePass.pulsePeriod = 4;
+    outlinePass.visibleEdgeColor.set("#ffffff");
+    outlinePass.hiddenEdgeColor.set("#190a05");
+
+    // ================================================
+    // Loading the Backing Image
+    // ================================================
 
     const textureLoader = new THREE.TextureLoader();
-    const skyTexture = textureLoader.load(`${process.env.PUBLIC_URL}/media/images/backing1@2x.jpg`);
-    
+    const skyTexture    = textureLoader.load(
+      `${process.env.PUBLIC_URL}/media/images/backing1@2x.jpg`,
+      undefined,  
+      (error: unknown) => {
+        console.error("Failed to load the backing image:", error);
+      }
+    );
+
     const skyGeometry = new THREE.SphereGeometry(500, 32, 32);
-    const skyMaterial = new THREE.MeshBasicMaterial({ map: skyTexture, side: THREE.BackSide });
-    
+    const skyMaterial = new THREE.MeshBasicMaterial({
+      map: skyTexture,
+      side: THREE.BackSide,
+    });
+
     const skySphere = new THREE.Mesh(skyGeometry, skyMaterial);
     scene.add(skySphere);
-    
-      // ================================================
-      // Loading the Reflection Map
-      // ================================================
+
+    // ================================================
+    // Loading the Reflection Map
+    // ================================================
 
     let cubeTexture: THREE.CubeTexture;
     const loader = new THREE.CubeTextureLoader();
@@ -338,55 +409,158 @@ const Cessna: React.FC = () => {
       ],
       function (texture) {
         cubeTexture = texture;
+      },
+      undefined,  
+      (error: unknown) => {
+        console.error("Failed to load the cube texture:", error);
       }
     );
 
-      // ================================================
-      // Loading the Cessna
-      // ================================================
+    // ================================================
+    // Loading the Cessna
+    // ================================================
 
     const planeLoader = new GLTFLoader();
     planeLoader.load(
-      `${process.env.PUBLIC_URL}/media/models/Cessna172_v002.glb`,
+      `${process.env.PUBLIC_URL}/media/models/Cessna172.glb`,
       (gltf) => {
-        airplane = gltf.scene;
+        airplaneRef.current = gltf.scene;
 
-        prop          = airplane.getObjectByName("Prop");
-        leftFlap      = airplane.getObjectByName("FlapsLeft");
-        rightFlap     = airplane.getObjectByName("FlapsRight");
-        elevatorLeft  = airplane.getObjectByName("ElevatorLeft");
-        elevatorRight = airplane.getObjectByName("ElevatorRight");
-        aileronLeft   = airplane.getObjectByName("AileronLeft");
-        aileronRight  = airplane.getObjectByName("AileronRight");
-        rudder        = airplane.getObjectByName("Rudder");
+        propRef.current          = airplaneRef.current.getObjectByName("Prop");
+        leftFlapRef.current      = airplaneRef.current.getObjectByName("FlapsLeft");
+        rightFlapRef.current     = airplaneRef.current.getObjectByName("FlapsRight");
+        elevatorLeftRef.current  = airplaneRef.current.getObjectByName("ElevatorLeft");
+        elevatorRightRef.current = airplaneRef.current.getObjectByName("ElevatorRight");
+        aileronLeftRef.current   = airplaneRef.current.getObjectByName("AileronLeft");
+        aileronRightRef.current  = airplaneRef.current.getObjectByName("AileronRight");
+        rudderRef.current        = airplaneRef.current.getObjectByName("Rudder");
+        strutRef.current         = airplaneRef.current.getObjectByName("StrutFront");
 
-        airplane.position.set(0, 0, 0);
+        flapRefs.current.leftFlapRef  = airplaneRef.current.getObjectByName("FlapsLeft");
+        flapRefs.current.rightFlapRef = airplaneRef.current.getObjectByName("FlapsRight");
 
-        if (airplane) {
-          airplane.traverse((child: THREE.Object3D) => {
+        airplaneRef.current.position.set(0, 0, 0);
+        if (airplaneRef.current) {
+          airplaneRef.current.traverse((child: THREE.Object3D) => {
+
             if (child instanceof THREE.Mesh && child.material) {
               child.material.envMap = cubeTexture;
               child.material.needsUpdate = true;
-        
-              if (child.material.name === "Beacon" || child.material.name === "NavRed" || child.material.name === "NavGreen") {
+
+              if (
+                child.material.name === "Beacon" ||
+                child.material.name === "NavRed" ||
+                child.material.name === "NavGreen"
+              ) {
                 const shaderMat = pulsingMaterial(child.material.color);
-                shaderMat.name = child.material.name;  // Preserve the name
+                shaderMat.name = child.material.name; 
                 child.material = shaderMat;
-                materialMap[shaderMat.name] = shaderMat;  // Use the preserved name
+                materialMap[shaderMat.name] = shaderMat;
               }
             }
           });
         }
-        
 
-        scene.add(airplane);
+        scene.add(airplaneRef.current);
+      },
+      undefined,
+      (error: any) => {
+        console.error("Failed to load the GLTF model:", error.message);
       }
     );
 
-      // ================================================
-      // Animation Loop
-      // ================================================
-        const controls = initControls(camera, renderer);
+    // ================================================
+    // Scene Interactions
+    // ================================================
+
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    const displayInfoPopup = (name: string) => {
+      const [baseName] = name.split('_');
+      const normalizedBaseName = baseName.replace(/Left|Right/, '');
+      const capitalizedBaseName = normalizedBaseName.charAt(0).toUpperCase() + normalizedBaseName.slice(1).toLowerCase();
+      
+      const info = objectInfoMap[capitalizedBaseName];
+      console.log("Looking for:", capitalizedBaseName);
+      console.log("Found:", info);
+    
+      if (info) {
+        const { h1, paragraph, image } = info;
+        setPopupInfo({ headline: h1, paragraph, image }); 
+      }
+    };
+
+    const handleObjectSelection = (
+      selectedObject: THREE.Object3D<THREE.Object3DEventMap>
+    ) => {    
+      let selectedObjects = [selectedObject];
+      if (airplaneRef.current) {
+        if (/Left/i.test(selectedObject.name)) {
+          const counterpartName = selectedObject.name.replace(/Left/i, "Right");
+          const counterpart = airplaneRef.current.getObjectByName(counterpartName);
+          if (counterpart) selectedObjects.push(counterpart);
+        } else if (/Right/i.test(selectedObject.name)) {
+          const counterpartName = selectedObject.name.replace(/Right/i, "Left");
+          const counterpart = airplaneRef.current.getObjectByName(counterpartName);
+          if (counterpart) selectedObjects.push(counterpart);
+        }
+      }
+
+      displayInfoPopup(selectedObject.name); 
+
+      const tweenParams = { edgeStrength: 0.0 };
+
+      const tween = new TWEEN.Tween(tweenParams)
+        .to({ edgeStrength: 3.0 }, 1000) 
+        .easing(TWEEN.Easing.Quadratic.Out) 
+        .onUpdate(() => {
+          outlinePass.edgeStrength = tweenParams.edgeStrength;
+        })
+
+      tween.start();
+
+      outlinePass.selectedObjects = selectedObjects;
+    };
+
+    outlinePassRef.current = outlinePass;
+    
+    const onMouseClick = (event: { preventDefault: () => void; clientX: number; clientY: number; }) => {
+
+      event.preventDefault();
+
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+
+      const intersects = raycaster.intersectObjects(
+        [
+          propRef.current,
+          leftFlapRef.current,
+          rightFlapRef.current,
+          elevatorLeftRef.current,
+          elevatorRightRef.current,
+          aileronLeftRef.current,
+          aileronRightRef.current,
+          rudderRef.current,
+        ].filter(Boolean) as THREE.Object3D[]
+      );
+
+      if (intersects.length > 0) {
+        const selectedObject = intersects[0].object;
+        handleObjectSelection(selectedObject);
+      } else {
+        clearSelection();
+      }
+    };
+
+    window.addEventListener("click", onMouseClick);
+
+    // ================================================
+    // Animation Loop
+    // ================================================
+    const controls = initControls(camera, renderer);
 
     const animate = () => {
       requestAnimationFrame(animate);
@@ -394,55 +568,90 @@ const Cessna: React.FC = () => {
 
       controls.update();
 
-      bobTime += 0.01;
-      lightTime += 0.1;
+      bobTimeRef.current += 0.01;
 
       Object.keys(materialMap).forEach((key) => {
-        materialMap[key].uniforms.lightTime.value += 0.1; // Or however you're updating lightTime
+        materialMap[key].uniforms.lightTime.value += 0.1; 
       });
 
-      if (airplane) {
+      if (airplaneRef.current) {
         const damping = 0.01;
 
-        const targetRollAngle  = aileronRightAngleRef.current;
-        const currentRollAngle = (airplane.rotation.z * 180) / Math.PI;
-        const newRollAngle     = currentRollAngle + (targetRollAngle - currentRollAngle) * damping;
-        airplane.rotation.z = THREE.MathUtils.degToRad(newRollAngle);
+        const targetRollAngle = aileronRightAngleRef.current;
+        const currentRollAngle = (airplaneRef.current.rotation.z * 180) / Math.PI;
+        const newRollAngle =
+          currentRollAngle + (targetRollAngle - currentRollAngle) * damping;
+        airplaneRef.current.rotation.z = THREE.MathUtils.degToRad(newRollAngle);
 
-        const targetPitchAngle  = elevatorAngleRef.current * -1.5;
-        const currentPitchAngle = (airplane.rotation.x * 180) / Math.PI;
-        const newPitchAngle     = currentPitchAngle + (targetPitchAngle - currentPitchAngle) * damping;
-        airplane.rotation.x = THREE.MathUtils.degToRad(newPitchAngle);
+        const targetPitchAngle = elevatorAngleRef.current * -1.5;
+        const currentPitchAngle = (airplaneRef.current.rotation.x * 180) / Math.PI;
+        const newPitchAngle =
+          currentPitchAngle + (targetPitchAngle - currentPitchAngle) * damping;
+        airplaneRef.current.rotation.x = THREE.MathUtils.degToRad(newPitchAngle);
 
-        const targetYawAngle  = rudderAngleRef.current * -1;
-        const currentYawAngle = (airplane.rotation.y * 180) / Math.PI;
-        const newYawAngle     = currentYawAngle + (targetYawAngle - currentYawAngle) * damping;
-        airplane.rotation.y = THREE.MathUtils.degToRad(newYawAngle);
+        const targetYawAngle = rudderAngleRef.current * -1;
+        const currentYawAngle = (airplaneRef.current.rotation.y * 180) / Math.PI;
+        const newYawAngle =
+          currentYawAngle + (targetYawAngle - currentYawAngle) * damping;
+        airplaneRef.current.rotation.y = THREE.MathUtils.degToRad(newYawAngle);
 
-        airplane.position.y = Math.sin(bobTime) * 0.1 * bobIntensityRef.current - newPitchAngle * 0.1;
-        airplane.position.x = Math.cos(bobTime) * 0.1 * bobIntensityRef.current - newRollAngle * 0.5;
+        airplaneRef.current.position.y =
+          Math.sin(bobTimeRef.current) * 0.1 * bobIntensityRef.current -
+          newPitchAngle * 0.1;
+        airplaneRef.current.position.x =
+          Math.cos(bobTimeRef.current) * 0.1 * bobIntensityRef.current -
+          newRollAngle * 0.5;
 
-        camera.lookAt(airplane.position);
+        camera.lookAt(airplaneRef.current.position);
       }
 
-      if (prop) {
-        prop.rotation.z += speedRef.current;
+      if (propRef.current) {
+        propRef.current.rotation.z += speedRef.current;
       }
 
-      renderer.render(scene, camera);
+      composer.render();
     };
 
     animate();
 
+    const handleResize = () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+  
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      composer.setSize(window.innerWidth, window.innerHeight);
+    };
+
+    window.addEventListener('resize', handleResize);
     window.addEventListener("keydown", handleKeyPress);
     window.addEventListener("keyup", handleKeyUp);
 
     return () => {
       window.removeEventListener("keydown", handleKeyPress);
       window.removeEventListener("keyup", handleKeyUp);
+      window.removeEventListener('resize', handleResize);
     };
+    // eslint-disable-next-line
   }, []);
 
+  const clearSelection = () => {
+    if (outlinePassRef.current) {
+      outlinePassRef.current.selectedObjects = [];
+  
+      const tweenParams = { edgeStrength: outlinePassRef.current.edgeStrength };
+  
+      const reverseTween = new TWEEN.Tween(tweenParams)
+        .to({ edgeStrength: 0.0 }, 1000) 
+        .easing(TWEEN.Easing.Quadratic.Out) 
+        .onUpdate(() => {
+          outlinePassRef.current!.edgeStrength = tweenParams.edgeStrength;
+        });
+  
+      reverseTween.start();
+    }
+    setPopupInfo(null);
+  };
+  
   return (
     <>
       <div className="controls">
@@ -475,8 +684,22 @@ const Cessna: React.FC = () => {
         </div>
       </div>
 
+      <div className={`info-popup ${popupInfo ? 'active' : ''}`}>
+        {popupInfo ? (
+          <div>
+            <h2>{popupInfo.headline}</h2>
+            <p>{popupInfo.paragraph}</p>
+            {popupInfo.image && <img src={popupInfo.image} alt={popupInfo.headline} />}
+            <button className = "icon-button" onClick = {clearSelection}>
+              <span>Close</span>
+            <div><i className="fa-duotone fa-xmark-large"></i></div>
+          </button>
+        </div>
+        ) : null}
+      </div>
+
       <div className="instructions">
-        <div>      
+        <div>
           <span>
             <i className="fa-solid fa-fw fa-caret-left" />
           </span>
@@ -505,7 +728,7 @@ const Cessna: React.FC = () => {
         </div>
       </div>
 
-      <div id="scene-holder">{/* Three.js scene will be appended here */}</div>
+      <div id="scene-holder"></div>
     </>
   );
 };
